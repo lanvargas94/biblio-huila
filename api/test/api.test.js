@@ -44,3 +44,8 @@ test('prestar un libro sin ejemplares responde 409 con el motivo en JSON', async
   assert.equal(r.status, 409)
   assert.equal((await r.json()).error, 'no hay ejemplares disponibles')
 })
+
+test('la API no abre CORS a cualquier origen', async () => {
+  const r = await fetch(`${api.base}/libros`, { headers: { Origin: 'https://sitio-ajeno.example' } })
+  assert.equal(r.headers.get('access-control-allow-origin'), null)
+})
