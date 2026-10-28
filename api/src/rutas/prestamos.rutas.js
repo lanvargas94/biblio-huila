@@ -1,49 +1,13 @@
 // Capa HTTP de préstamos: traduce la petición a un caso de uso y el resultado a JSON.
+// Los errores no se atrapan aquí: los recibe el manejador central (errores.js).
 const express = require('express')
 
 function rutasPrestamos(servicio) {
   const r = express.Router()
-
-  r.get('/', function (req, res) {
-    try {
-      res.json(servicio.listar())
-    } catch (err) {
-      console.log(err)
-      res.status(500).send(err.message + ' ' + err.stack)
-    }
-  })
-
-  r.get('/vencidos', function (req, res) {
-    try {
-      res.json(servicio.vencidos())
-    } catch (err) {
-      console.log(err)
-      res.status(500).send(err.message + ' ' + err.stack)
-    }
-  })
-
-  r.post('/', function (req, res) {
-    try {
-      const prestamo = servicio.prestar({ lector: req.body.lector, libroId: req.body.libroId })
-      console.log('prestamo creado!!!', prestamo)
-      res.json(prestamo)
-    } catch (err) {
-      if (err.estado) return res.status(err.estado).send(err.message)
-      console.log(err)
-      res.status(500).send(err.message + ' ' + err.stack)
-    }
-  })
-
-  r.put('/:id/devolver', function (req, res) {
-    try {
-      res.json(servicio.devolver(req.params.id))
-    } catch (err) {
-      if (err.estado) return res.status(err.estado).send(err.message)
-      console.log(err)
-      res.status(500).send(err.message + ' ' + err.stack)
-    }
-  })
-
+  r.get('/', (req, res) => res.json(servicio.listar()))
+  r.get('/vencidos', (req, res) => res.json(servicio.vencidos()))
+  r.post('/', (req, res) => res.status(201).json(servicio.prestar({ lector: req.body.lector, libroId: req.body.libroId })))
+  r.put('/:id/devolver', (req, res) => res.json(servicio.devolver(req.params.id)))
   return r
 }
 

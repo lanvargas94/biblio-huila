@@ -27,13 +27,20 @@ test('POST /api/libros sin la clave del bibliotecario responde 401', async () =>
 test('POST /api/libros con la clave crea el libro', async () => {
   const r = await api.enviar('POST', '/libros', { titulo: 'Nuevo', autor: 'Autor', ejemplares: 1 },
     { 'x-admin-key': CONFIG.claveAdmin })
-  assert.equal(r.status, 200)
+  assert.equal(r.status, 201)
   assert.ok((await r.json()).id > 4)
 })
 
 test('POST /api/prestamos registra el préstamo', async () => {
   const r = await api.enviar('POST', '/prestamos', { lector: 'Ana', libroId: 2 })
-  assert.equal(r.status, 200)
+  assert.equal(r.status, 201)
   const prestamos = await (await fetch(`${api.base}/prestamos`)).json()
   assert.equal(prestamos[0].lector, 'Ana')
+})
+
+test('prestar un libro sin ejemplares responde 409 con el motivo en JSON', async () => {
+  await api.enviar('POST', '/prestamos', { lector: 'Ana', libroId: 3 })
+  const r = await api.enviar('POST', '/prestamos', { lector: 'Luis', libroId: 3 })
+  assert.equal(r.status, 409)
+  assert.equal((await r.json()).error, 'no hay ejemplares disponibles')
 })

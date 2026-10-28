@@ -2,6 +2,7 @@
 const { abrir } = require('../src/db')
 const { crearServicios } = require('../src/servicios')
 const { crearApp } = require('../src/app')
+const { logSilencioso } = require('../src/log')
 
 const CONFIG = { claveAdmin: 'clave-de-prueba' }
 
@@ -15,7 +16,7 @@ function crearReloj(fechaIso) {
 
 async function levantarApi(reloj = crearReloj('2026-10-01T12:00:00Z')) {
   const servicios = crearServicios(abrir(':memory:'), { ahora: reloj.ahora })
-  const servidor = crearApp({ servicios, config: CONFIG }).listen(0)
+  const servidor = crearApp({ servicios, config: CONFIG, log: logSilencioso }).listen(0)
   await new Promise((ok) => servidor.once('listening', ok))
   const base = `http://127.0.0.1:${servidor.address().port}/api`
   const enviar = (metodo, ruta, cuerpo, cabeceras = {}) => fetch(base + ruta, {
