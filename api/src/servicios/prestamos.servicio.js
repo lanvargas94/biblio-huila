@@ -1,42 +1,38 @@
-// Casos de uso de préstamos: aquí viven las reglas de la biblioteca,
+// Casos de uso de préstamos: aplican las reglas de la biblioteca (reglas.js)
 // sin saber nada de HTTP ni de SQL.
 const { ErrorDeNegocio } = require('../errores')
+const { MAX_PRESTAMOS_POR_LECTOR, calcularVencimiento, calcularMulta } = require('./reglas')
 
 function crearServicioPrestamos({ libros, prestamos, ahora }) {
   function prestar({ lector, libroId }) {
     const libro = libros.buscarPorId(libroId)
-    if (!libro) throw new ErrorDeNegocio('no existe', 404)
-    if (prestamos.contarActivosDeLector(lector) >= 3) throw new ErrorDeNegocio('el lector ya tiene 3 libros')
-    if (prestamos.contarActivosDeLibro(libro.id) >= libro.ejemplares) throw new ErrorDeNegocio('no hay ejemplares')
-    var hoy = ahora()
-    var vence = new Date(hoy.getTime() + 15 * 24 * 60 * 60 * 1000)
+    if (!libro) throw new ErrorDeNegocio('el libro no existe', 404)
+    if (prestamos.contarActivosDeLector(lector) >= MAX_PRESTAMOS_POR_LECTOR) {
+      throw new ErrorDeNegocio(`el lector ya tiene ${MAX_PRESTAMOS_POR_LECTOR} libros prestados`, 409)
+    }
+    if (prestamos.contarActivosDeLibro(libro.id) >= libro.ejemplares) {
+      throw new ErrorDeNegocio('no hay ejemplares disponibles', 409)
+    }
+    const hoy = ahora()
+    const vence = calcularVencimiento(hoy)
     const id = prestamos.crear({ libroId: libro.id, lector, fecha: hoy.toISOString(), vence: vence.toISOString() })
-    return { id, vence }
+    return { id, libro: libro.titulo, lector, vence: vence.toISOString() }
   }
 
   function devolver(id) {
-    const p = prestamos.buscarPorId(id)
-    if (!p) throw new ErrorDeNegocio('no existe', 404)
-    var hoy = ahora()
-    var dias = Math.floor((hoy.getTime() - new Date(p.vence).getTime()) / (24 * 60 * 60 * 1000))
-    var multa = 0
-    if (dias > 0) multa = dias * 1500
-    prestamos.marcarDevuelto(p.id, multa)
-    return { ok: true, multa }
+    const prestamo = prestamos.buscarPorId(id)
+    if (!prestamo) throw new ErrorDeNegocio('el préstamo no existe', 404)
+    if (prestamo.devuelto) throw new ErrorDeNegocio('el préstamo ya fue devuelto', 409)
+    const multa = calcularMulta(prestamo.vence, ahora())
+    prestamos.marcarDevuelto(prestamo.id, multa)
+    return { id: prestamo.id, multa }
   }
 
   function vencidos() {
-    const todos = prestamos.listarActivos()
-    var lista = []
-    for (var i = 0; i < todos.length; i++) {
-      var hoy = ahora()
-      var dias = Math.floor((hoy.getTime() - new Date(todos[i].vence).getTime()) / (24 * 60 * 60 * 1000))
-      if (dias > 0) {
-        todos[i].multa = dias * 1500
-        lista.push(todos[i])
-      }
-    }
-    return lista
+    const hoy = ahora()
+    return prestamos.listarActivos()
+      .map((prestamo) => ({ ...prestamo, multa: calcularMulta(prestamo.vence, hoy) }))
+      .filter((prestamo) => prestamo.multa > 0)
   }
 
   return { listar: () => prestamos.listar(), prestar, devolver, vencidos }
