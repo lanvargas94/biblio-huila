@@ -1,0 +1,5 @@
+# Lo que no debe entrar a la imagen (ni a su caché de construcción)
+node_modules
+datos
+*.db
+.env

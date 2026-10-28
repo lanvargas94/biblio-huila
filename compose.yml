@@ -1,0 +1,29 @@
+# Ambiente de DESARROLLO: construye las imágenes desde el código de esta carpeta.
+#   cp .env.example .env               (y cambie ADMIN_KEY)
+#   docker compose up --build -d       ->  http://localhost:8080
+#   docker compose logs -f api         ->  los logs JSON de la API
+#   docker compose down                ->  apaga (los préstamos quedan en el volumen)
+#   docker compose down -v             ->  apaga y BORRA los datos
+services:
+  api:
+    build:
+      context: ./api
+      target: prod
+    environment:
+      ADMIN_KEY: ${ADMIN_KEY:?falta ADMIN_KEY en el .env}
+      APP_ENV: ${APP_ENV:-desarrollo}
+    volumes:
+      - datos:/data
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    ports:
+      - "${PUERTO_WEB:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  datos:
