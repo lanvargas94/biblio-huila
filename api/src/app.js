@@ -3,6 +3,7 @@
 const express = require('express')
 const { rutasLibros } = require('./rutas/libros.rutas')
 const { rutasPrestamos } = require('./rutas/prestamos.rutas')
+const { rutaSalud } = require('./rutas/salud.rutas')
 const { requiereAdmin } = require('./middleware/requiere-admin')
 const { registroDePeticiones } = require('./middleware/registro-peticiones')
 const { rutaNoEncontrada, manejadorDeErrores } = require('./errores')
@@ -17,6 +18,7 @@ function crearApp({ servicios, config, log }) {
     next()
   })
 
+  app.get('/api/health', rutaSalud(servicios.salud, config))
   app.use('/api/libros', rutasLibros(servicios.libros, requiereAdmin(config.claveAdmin)))
   app.use('/api/prestamos', rutasPrestamos(servicios.prestamos))
   app.use('/api', rutaNoEncontrada)
