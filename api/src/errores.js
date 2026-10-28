@@ -16,7 +16,9 @@ function rutaNoEncontrada(req, res) {
 // Express reconoce el manejador de errores porque recibe 4 parámetros.
 function manejadorDeErrores(log) {
   return function (err, req, res, next) {
-    if (err instanceof ErrorDeNegocio) return res.status(err.estado).json({ error: err.message })
+    if (err instanceof ErrorDeNegocio) {
+      return res.status(err.estado).json({ error: err.message, ...(err.errores && { errores: err.errores }) })
+    }
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido' })
     // Lo inesperado: el detalle va al log, NUNCA al cliente (no se filtran rutas ni SQL).
     log.error('error inesperado', { metodo: req.method, ruta: req.originalUrl, detalle: err.stack })
