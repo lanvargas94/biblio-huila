@@ -11,6 +11,8 @@ function leerConfig(env = process.env) {
     // La versión la pone el pipeline (commit desplegado); en la laptop queda "dev".
     version: env.APP_VERSION || 'dev',
     entorno: env.APP_ENV || 'local',
+    // Fuera de Docker la API también sirve el front; dentro de Docker esa carpeta no existe y lo sirve nginx.
+    webDir: env.WEB_DIR || path.join(__dirname, '..', '..', 'web', 'public'),
   }
 }
 
