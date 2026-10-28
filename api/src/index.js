@@ -29,9 +29,9 @@ if (cuantos.n == 0) {
 app.get('/libros', function (req, res) {
   try {
     var q = req.query.q
-    var sql = 'SELECT * FROM libros'
-    if (q) sql = sql + " WHERE titulo LIKE '%" + q + "%'"
-    const r = db.prepare(sql).all()
+    const r = q
+      ? db.prepare('SELECT * FROM libros WHERE titulo LIKE ?').all('%' + q + '%')
+      : db.prepare('SELECT * FROM libros').all()
     console.log('libros!!!', r)
     res.json(r)
   } catch (err) {
@@ -43,7 +43,8 @@ app.get('/libros', function (req, res) {
 app.post('/libros', function (req, res) {
   if (req.headers['x-admin-key'] !== config.claveAdmin) return res.status(401).send('no autorizado')
   try {
-    const r = db.prepare("INSERT INTO libros (titulo, autor, ejemplares) VALUES ('" + req.body.titulo + "', '" + req.body.autor + "', " + req.body.ejemplares + ')').run()
+    const r = db.prepare('INSERT INTO libros (titulo, autor, ejemplares) VALUES (?, ?, ?)')
+      .run(req.body.titulo, req.body.autor, req.body.ejemplares)
     res.json({ id: r.lastInsertRowid })
   } catch (err) {
     console.log(err)
@@ -64,24 +65,25 @@ app.get('/prestamos', function (req, res) {
 app.post('/prestamos', function (req, res) {
   try {
     const lector = req.body.lector
-    const libro = db.prepare('SELECT * FROM libros WHERE id = ' + req.body.libroId).get()
+    const libro = db.prepare('SELECT * FROM libros WHERE id = ?').get(req.body.libroId)
     if (!libro) {
       res.status(404).send('no existe')
       return
     }
-    const activos = db.prepare("SELECT COUNT(*) as n FROM prestamos WHERE lector = '" + lector + "' AND devuelto = 0").get()
+    const activos = db.prepare('SELECT COUNT(*) as n FROM prestamos WHERE lector = ? AND devuelto = 0').get(lector)
     if (activos.n >= 3) {
       res.status(400).send('el lector ya tiene 3 libros')
       return
     }
-    const prestados = db.prepare('SELECT COUNT(*) as n FROM prestamos WHERE libro_id = ' + libro.id + ' AND devuelto = 0').get()
+    const prestados = db.prepare('SELECT COUNT(*) as n FROM prestamos WHERE libro_id = ? AND devuelto = 0').get(libro.id)
     if (prestados.n >= libro.ejemplares) {
       res.status(400).send('no hay ejemplares')
       return
     }
     var hoy = new Date()
     var vence = new Date(hoy.getTime() + 15 * 24 * 60 * 60 * 1000)
-    const r = db.prepare('INSERT INTO prestamos (libro_id, lector, fecha, vence, devuelto, multa) VALUES (' + libro.id + ", '" + lector + "', '" + hoy.toISOString() + "', '" + vence.toISOString() + "', 0, 0)").run()
+    const r = db.prepare('INSERT INTO prestamos (libro_id, lector, fecha, vence, devuelto, multa) VALUES (?, ?, ?, ?, 0, 0)')
+      .run(libro.id, lector, hoy.toISOString(), vence.toISOString())
     console.log('prestamo creado!!!', r)
     res.json({ id: r.lastInsertRowid, vence: vence })
   } catch (err) {
@@ -92,7 +94,7 @@ app.post('/prestamos', function (req, res) {
 
 app.put('/prestamos/:id/devolver', function (req, res) {
   try {
-    const p = db.prepare('SELECT * FROM prestamos WHERE id = ' + req.params.id).get()
+    const p = db.prepare('SELECT * FROM prestamos WHERE id = ?').get(req.params.id)
     if (!p) {
       res.status(404).send('no existe')
       return
@@ -101,7 +103,7 @@ app.put('/prestamos/:id/devolver', function (req, res) {
     var dias = Math.floor((hoy.getTime() - new Date(p.vence).getTime()) / (24 * 60 * 60 * 1000))
     var multa = 0
     if (dias > 0) multa = dias * 1500
-    db.prepare('UPDATE prestamos SET devuelto = 1, multa = ' + multa + ' WHERE id = ' + p.id).run()
+    db.prepare('UPDATE prestamos SET devuelto = 1, multa = ? WHERE id = ?').run(multa, p.id)
     res.json({ ok: true, multa: multa })
   } catch (err) {
     console.log(err)
