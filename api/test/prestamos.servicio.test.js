@@ -42,3 +42,22 @@ test('devolver a tiempo no cobra multa', () => {
   reloj.avanzarDias(10)
   assert.equal(prestamos.devolver(id).multa, 0)
 })
+
+test('no se puede devolver dos veces el mismo préstamo', () => {
+  const { prestamos } = preparar()
+  const { id } = prestamos.prestar({ lector: 'Ana', libroId: 1 })
+  prestamos.devolver(id)
+  assert.throws(() => prestamos.devolver(id), /ya fue devuelto/)
+})
+
+test('vencidos solo trae los atrasados, con su multa calculada', () => {
+  const { prestamos, reloj } = preparar()
+  prestamos.prestar({ lector: 'Ana', libroId: 1 })
+  reloj.avanzarDias(5)
+  prestamos.prestar({ lector: 'Luis', libroId: 2 })
+  reloj.avanzarDias(13) // el de Ana lleva 3 días de retraso; el de Luis aún no vence
+  const lista = prestamos.vencidos()
+  assert.equal(lista.length, 1)
+  assert.equal(lista[0].lector, 'Ana')
+  assert.equal(lista[0].multa, 4500)
+})
