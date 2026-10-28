@@ -1,0 +1,33 @@
+# Ambiente de PRODUCCIÓN (la EC2): NO construye nada, descarga las imágenes que armó
+# el pipeline en GHCR. TAG = commit desplegado; IMAGEN = ghcr.io/<usuario>/<repo>.
+# El pipeline deja ADMIN_KEY en app/.env (desde el secreto del repositorio).
+#   TAG=abc1234 IMAGEN=ghcr.io/usuario/biblio-huila docker compose -f compose.prod.yml up -d --wait
+services:
+  api:
+    image: ${IMAGEN:?falta IMAGEN}-api:${TAG:?falta TAG}
+    environment:
+      ADMIN_KEY: ${ADMIN_KEY:?falta ADMIN_KEY}
+      APP_ENV: produccion
+    volumes:
+      - datos:/data
+    mem_limit: 256m        # una t3.micro tiene 1 GB: cada contenedor con su presupuesto
+    restart: unless-stopped
+    logging: &logs
+      driver: json-file
+      options:             # sin esto los logs crecen hasta llenar el disco de 8 GB
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    image: ${IMAGEN:?falta IMAGEN}-web:${TAG:?falta TAG}
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 64m
+    restart: unless-stopped
+    logging: *logs
+
+volumes:
+  datos:
