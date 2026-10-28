@@ -4,12 +4,13 @@ const { crearRepositorioPrestamos } = require('../repositorios/prestamos.reposit
 const { crearServicioLibros } = require('./libros.servicio')
 const { crearServicioPrestamos } = require('./prestamos.servicio')
 
-function crearServicios(db) {
+// `ahora` permite que las pruebas controlen el reloj; en producción es la hora real.
+function crearServicios(db, { ahora = () => new Date() } = {}) {
   const libros = crearRepositorioLibros(db)
   const prestamos = crearRepositorioPrestamos(db)
   return {
     libros: crearServicioLibros({ libros }),
-    prestamos: crearServicioPrestamos({ libros, prestamos }),
+    prestamos: crearServicioPrestamos({ libros, prestamos, ahora }),
   }
 }
 
