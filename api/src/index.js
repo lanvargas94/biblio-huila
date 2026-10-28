@@ -1,5 +1,10 @@
 const express = require('express')
+const fs = require('node:fs')
+const path = require('node:path')
 const { DatabaseSync } = require('node:sqlite')
+const { leerConfig } = require('./config')
+
+const config = leerConfig()
 
 const app = express()
 app.use(express.json())
@@ -9,8 +14,8 @@ app.use(function (req, res, next) {
   next()
 })
 
-const db = new DatabaseSync('./biblio.db')
-const ADMIN_KEY = 'biblio-admin-2026' // clave del bibliotecario
+fs.mkdirSync(path.dirname(config.rutaDb), { recursive: true })
+const db = new DatabaseSync(config.rutaDb)
 
 db.exec(`CREATE TABLE IF NOT EXISTS libros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT, autor TEXT, ejemplares INTEGER);
 CREATE TABLE IF NOT EXISTS prestamos (id INTEGER PRIMARY KEY AUTOINCREMENT, libro_id INTEGER, lector TEXT, fecha TEXT, vence TEXT, devuelto INTEGER, multa INTEGER)`)
@@ -36,7 +41,7 @@ app.get('/libros', function (req, res) {
 })
 
 app.post('/libros', function (req, res) {
-  if (req.headers['x-admin-key'] != ADMIN_KEY) return res.status(401).send('no autorizado')
+  if (req.headers['x-admin-key'] !== config.claveAdmin) return res.status(401).send('no autorizado')
   try {
     const r = db.prepare("INSERT INTO libros (titulo, autor, ejemplares) VALUES ('" + req.body.titulo + "', '" + req.body.autor + "', " + req.body.ejemplares + ')').run()
     res.json({ id: r.lastInsertRowid })
@@ -123,6 +128,6 @@ app.get('/prestamos/vencidos', function (req, res) {
   }
 })
 
-app.listen(3000, function () {
-  console.log('servidor corriendo en http://localhost:3000')
+app.listen(config.puerto, function () {
+  console.log('servidor corriendo en el puerto ' + config.puerto)
 })
