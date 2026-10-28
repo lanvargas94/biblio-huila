@@ -1,0 +1,6 @@
+# Lo que se genera o es secreto NO va a git
+node_modules/
+*.db
+datos/
+.env
+*.pem
