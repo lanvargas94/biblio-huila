@@ -1,0 +1,2 @@
+# Saltos de línea LF siempre: un .sh o un Dockerfile con CRLF (Windows) falla en Linux
+* text=auto eol=lf
