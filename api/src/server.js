@@ -3,11 +3,11 @@ const { leerConfig } = require('./config')
 const { abrir } = require('./db')
 const { crearServicios } = require('./servicios')
 const { crearApp } = require('./app')
+const { crearLog } = require('./log')
 
+const log = crearLog()
 const config = leerConfig()
 const db = abrir(config.rutaDb)
-const app = crearApp({ servicios: crearServicios(db), config })
+const app = crearApp({ servicios: crearServicios(db), config, log })
 
-app.listen(config.puerto, function () {
-  console.log('servidor corriendo en el puerto ' + config.puerto)
-})
+app.listen(config.puerto, () => log.info('api escuchando', { puerto: config.puerto }))
