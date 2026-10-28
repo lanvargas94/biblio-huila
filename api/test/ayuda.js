@@ -4,7 +4,7 @@ const { crearServicios } = require('../src/servicios')
 const { crearApp } = require('../src/app')
 const { logSilencioso } = require('../src/log')
 
-const CONFIG = { claveAdmin: 'clave-de-prueba' }
+const CONFIG = { claveAdmin: 'clave-de-prueba', version: 'test', entorno: 'pruebas' }
 
 function crearReloj(fechaIso) {
   let actual = new Date(fechaIso)

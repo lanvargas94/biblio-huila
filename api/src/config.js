@@ -8,6 +8,9 @@ function leerConfig(env = process.env) {
     puerto: Number(env.PORT) || 3000,
     rutaDb: env.RUTA_DB || path.join(__dirname, '..', 'datos', 'biblio.db'),
     claveAdmin: env.ADMIN_KEY,
+    // La versión la pone el pipeline (commit desplegado); en la laptop queda "dev".
+    version: env.APP_VERSION || 'dev',
+    entorno: env.APP_ENV || 'local',
   }
 }
 

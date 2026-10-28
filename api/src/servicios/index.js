@@ -3,6 +3,7 @@ const { crearRepositorioLibros } = require('../repositorios/libros.repositorio')
 const { crearRepositorioPrestamos } = require('../repositorios/prestamos.repositorio')
 const { crearServicioLibros } = require('./libros.servicio')
 const { crearServicioPrestamos } = require('./prestamos.servicio')
+const { crearServicioSalud } = require('./salud.servicio')
 
 // `ahora` permite que las pruebas controlen el reloj; en producción es la hora real.
 function crearServicios(db, { ahora = () => new Date() } = {}) {
@@ -11,6 +12,7 @@ function crearServicios(db, { ahora = () => new Date() } = {}) {
   return {
     libros: crearServicioLibros({ libros }),
     prestamos: crearServicioPrestamos({ libros, prestamos, ahora }),
+    salud: crearServicioSalud(db),
   }
 }
 
